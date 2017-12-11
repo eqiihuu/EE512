@@ -7,7 +7,7 @@ from exact_inf import *
 
 test_files = [1, 2, 4, 5, 6, 8, 9, 10]
 hard_files = [7, 11]
-for i in hard_files:
+for i in test_files:
     file_name = os.path.join('markov_files', 'markov%d' % i)
     uai_path = os.path.join('./data/', file_name+'.uai')
 
@@ -16,8 +16,8 @@ for i in hard_files:
     # graph = add_evid(graph)
 
     t0 = time.time()
-    triangulated_graph = get_triangulated_graph(graph)
-    max_cliques = get_max_cliques(triangulated_graph)
+    triangulate_graph(graph)
+    max_cliques = get_max_cliques(graph)
     initialized_cliques = init_max_cliques(graph, max_cliques)
 
     junction_tree = get_junction_tree(initialized_cliques)

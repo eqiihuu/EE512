@@ -13,8 +13,8 @@ graph = Network(uai_path, evid_path)
 # graph = add_evid(graph)
 
 t0 = time.time()
-triangulated_graph = get_triangulated_graph(graph)
-max_cliques = get_max_cliques(triangulated_graph)
+triangulate_graph(graph)
+max_cliques = get_max_cliques(graph)
 initialized_cliques = init_max_cliques(graph, max_cliques)
 
 junction_tree = get_junction_tree(initialized_cliques)

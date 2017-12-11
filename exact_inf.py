@@ -3,9 +3,8 @@ import sys
 from markov import *
 
 
-def get_triangulated_graph(origin_graph):
+def triangulate_graph(graph):
     # use min-filling heuristic algorithm to find the triangulated graph
-    graph = copy.deepcopy(origin_graph)
     unmarked = graph.get_variable_indexes()
     while len(unmarked) > 0:
         # First find the min filling-in node to eliminate
@@ -32,7 +31,6 @@ def get_triangulated_graph(origin_graph):
                     if neighbor_prime in unmarked and neighbor != neighbor_prime:
                         neighbor_node.add_neighbor(neighbor_prime)
         unmarked.remove(v_elim)
-    return graph
 
 
 # Get all max-cliques using MSC
@@ -96,7 +94,7 @@ def init_max_cliques(graph, max_cliques):
 
 # Generate junction tree by finding the neighbor with largest intersection
 def get_junction_tree(max_cliques):
-    junction_tree = copy.deepcopy(max_cliques)
+    junction_tree = max_cliques
     for i in range(1, len(junction_tree)):
         index = 0
         max_n_neighbor = 0
@@ -165,14 +163,13 @@ def message_passing(parent, curr):
 
 # get a new graph with the evidence
 def add_evid(graph):
-    new_graph = copy.deepcopy(graph)
-    cdn_list = [n.get_cardinality() for n in new_graph.get_variables()]
-    for n in new_graph.get_variables():
+    cdn_list = [n.get_cardinality() for n in graph.get_variables()]
+    for n in graph.get_variables():
         v = n.get_index()
         evid = n.get_evidence()
         if evid == -1:
             continue
-        for c in new_graph.get_cliques():
+        for c in graph.get_cliques():
             c_nodes = c.get_variables()
             old_table = c.get_function_table()
             if v not in c_nodes:
@@ -186,4 +183,3 @@ def add_evid(graph):
             n.cardinality = 1
             c.function_table = old_table[tuple(s)]
             c.n_entry /= cdn_list[v]
-    return new_graph

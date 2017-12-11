@@ -30,6 +30,8 @@ def read_uai(f_path):
         probs = []
         while line != ['']:
             probs = probs + [float(i) for i in line if i]
+            if len(probs) == num_entry:
+                break
             line = f.readline().strip('\n').split(' ')
         function_tables.append([num_entry, probs])
     return type, num_variable, cardinalites, num_clique, cliques, function_tables
