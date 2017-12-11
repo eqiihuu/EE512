@@ -1,25 +1,30 @@
+import math
+import time
+import os
+
 from markov import *
 from exact_inf import *
 
+test_files = [1, 2, 4, 5, 6, 8, 9, 10]
+hard_files = [7, 11]
+for i in hard_files:
+    file_name = os.path.join('markov_files', 'markov%d' % i)
+    uai_path = os.path.join('./data/', file_name+'.uai')
 
-file_name = '1'
-uai_path = './data/'+file_name+'.uai.txt'
-evid_path = './data/'+file_name+'.uai.evid.txt'
-markov = Network(uai_path, evid_path)
-evid_graph = add_evid(markov)
+    evid_path = './data/2.uai.evid.txt'
+    graph = Network(uai_path, evid_path)
+    # graph = add_evid(graph)
 
-triangulated_graph = get_triangulated_graph(evid_graph)
-max_cliques = get_max_cliques(triangulated_graph)
-initialized_cliques = init_max_cliques(evid_graph, max_cliques)
-junction_tree = get_junction_tree(initialized_cliques)
+    t0 = time.time()
+    triangulated_graph = get_triangulated_graph(graph)
+    max_cliques = get_max_cliques(triangulated_graph)
+    initialized_cliques = init_max_cliques(graph, max_cliques)
 
-# for c in evid_graph.get_cliques():
-#     print c.get_variables()
-#     print '-', c.get_function_table().shape
-    # for n in c.get_neighbors():
-    #     print '---', n.get_variables()
+    junction_tree = get_junction_tree(initialized_cliques)
 
-message_passing(None, junction_tree[0])
-z = np.sum(junction_tree[0].get_function_table())
+    message_passing(None, junction_tree[0])
+    z = np.sum(junction_tree[0].get_function_table())
+    t1 = time.time()
 
-print z
+    print '%d\n Z = %e, log(Z) = %.3f' % (i, z, math.log(z))
+    print ' Time: %.3f s' % (t1-t0)

@@ -17,21 +17,20 @@ def get_triangulated_graph(origin_graph):
                 if neighbor in unmarked:
                     neighbor_node = graph.get_a_variable(neighbor)
                     for neighbor_prime in node.get_neighbors():
-                        if (neighbor != neighbor_prime) and (neighbor_prime not in neighbor_node.get_neighbors()):
+                        if (neighbor != neighbor_prime) and (neighbor_prime in unmarked) \
+                                and (neighbor_prime not in neighbor_node.get_neighbors()):
                             n_fillin += 1
             if n_fillin < min_n_fillin:
                 min_n_fillin = n_fillin
                 v_elim = v
         # Second connect all neighbors of this node
         node_elim = graph.get_a_variable(v_elim)
-        for neighbor in graph.get_a_variable(v_elim).get_neighbors():
+        for neighbor in node_elim.get_neighbors():
             if neighbor in unmarked:
                 neighbor_node = graph.get_a_variable(neighbor)
                 for neighbor_prime in node_elim.get_neighbors():
                     if neighbor_prime in unmarked and neighbor != neighbor_prime:
                         neighbor_node.add_neighbor(neighbor_prime)
-                        # print neighbor, neighbor_prime
-        # Third, eliminate the node
         unmarked.remove(v_elim)
     return graph
 
@@ -41,7 +40,7 @@ def get_max_cliques(trianulated_graph):
     max_cliques = []
     variables = trianulated_graph.get_variable_indexes()
     n_variable = trianulated_graph.get_n_variable()
-    marked = [False ] *n_variable
+    marked = [False] *n_variable
     prev_cdn = set()
     prev_v_elim = variables[0]
     while False in marked:
@@ -85,13 +84,11 @@ def init_max_cliques(graph, max_cliques):
             cdn = graph.get_a_variable(v).get_cardinality()
             table_size *= cdn
         table = [len(clique), [1]*table_size]
-        # print cardinalities, clique, table
         new_clique = Clique(cardinalities, clique, table)
         cliques.append(new_clique)
     for sub_clique in graph.get_cliques():
         for clique in cliques:
             if is_include(clique.get_variables(), sub_clique.get_variables()):
-                # print clique.get_variables(), sub_clique.get_variables()
                 clique.function_table = get_updated_table(clique, sub_clique)
                 break
     return cliques
@@ -114,9 +111,7 @@ def get_junction_tree(max_cliques):
 
 
 # get the new axis order for clique according to the separator
-def get_new_axis(matrix1, matrix2):
-    id1_list = [n for n in matrix1]
-    id2_list = [n for n in matrix2]
+def get_new_axis(id1_list, id2_list):
     id2_dict = {}
     id_delta = len(id1_list) - len(id2_list)
     for i in range(len(id2_list)):
@@ -141,44 +136,37 @@ def get_updated_table(clique, separator):
     rotated_c_table = np.moveaxis(c_table, old_axis, new_axis)
     updated_table = rotated_c_table * s_table
     reversed_c_table = np.moveaxis(updated_table, new_axis, old_axis)
-    # print '='*30
-    # print clique.get_variables()
-    # print clique.get_function_table()
-    # print '-' * 30
-    # print separator.get_variables()
-    # print separator.get_function_table()
-    # print '-' * 30
-    # print reversed_c_table
     return reversed_c_table
 
 
 # Get the separator nodes's position in clique
-def get_separator_index(clique, separator):
-    id1_list = [n.get_index() for n in clique]
-    id2_list = [n.get_index() for n in separator]
+def get_sum_index(clique, separator):  # (Clique, list)
     id_list = []
-    for i in range(len(id1_list)):
-        if id1_list[i] in id2_list:
+    for i in range(len(clique)):
+        if clique[i] not in separator:
             id_list.append(i)
-    return id_list
+    return tuple(id_list)
 
 
 def message_passing(parent, curr):
-    if curr.is_visited() or not parent:
-        return
-    for child in curr.get_neighbors():
-        message_passing(child, parent)
-    intersection = [i for i in parent.get_variable_indexes() if i in curr.get_variable_indexes()]
-    separator = Clique(intersection, [], [], [])
-    id_list = get_separator_index(parent, separator)
-    table = np.sum(curr.get_function_table(), id_list)
-    separator.function_table = table
-    parent.function_table = get_updated_table(parent, curr)
+    if not curr.is_visited():
+        curr.visited = True
+        for child in curr.get_neighbors():
+            message_passing(curr, child)
+        if not parent:
+            return
+        intersection = [i for i in parent.get_variables() if i in curr.get_variables()]
+        id_list = get_sum_index(curr.get_variables(), intersection)
+        table = np.sum(curr.get_function_table(), axis=id_list)
+        curr.variables = intersection
+        curr.function_table = table
+        parent.function_table = get_updated_table(parent, curr)
 
 
 # get a new graph with the evidence
 def add_evid(graph):
     new_graph = copy.deepcopy(graph)
+    cdn_list = [n.get_cardinality() for n in new_graph.get_variables()]
     for n in new_graph.get_variables():
         v = n.get_index()
         evid = n.get_evidence()
@@ -191,14 +179,11 @@ def add_evid(graph):
                 continue
             s = []
             for c_node in c_nodes:
-                cdn = new_graph.get_a_variable(c_node).get_cardinality()
-                if cdn == 1:
-                    continue
                 if c_node != v:
-                    s.append(range(cdn))
+                    s.append(slice(None, None))
                 else:
-                    s.append(evid)
+                    s.append(slice(evid, evid+1))
             n.cardinality = 1
             c.function_table = old_table[tuple(s)]
-    print new_graph.cliques[0].variables, new_graph.cliques[0].function_table
+            c.n_entry /= cdn_list[v]
     return new_graph

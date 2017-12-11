@@ -167,7 +167,8 @@ class Variable(object):
             if self.index in clique:
                 for i in clique:
                     self.neighbors.add(i)
-        self.neighbors.remove(self.index)
+        if self.index in self.neighbors:
+            self.neighbors.remove(self.index)
 
     def init_evidences(self, evidences):
         if self.index in evidences.keys():
@@ -181,8 +182,8 @@ class Clique(object):
         self.n_variables = len(clique)
         self.n_entry = function_table[0]
         self.function_table = np.asarray(function_table[1])
-        self.visited = 0
-        self.neighbors = set()
+        self.visited = False
+        self.neighbors = set()  # For junction tree
         cardinality = []
         for i in range(self.n_variables):
             cardinality.append(cardinalities[clique[i]])
@@ -212,7 +213,7 @@ class Clique(object):
         return self.function_table
 
     def is_visited(self):
-        return self.visited != 0
+        return self.visited
 
     def get_neighbors(self):
         return self.neighbors

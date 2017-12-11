@@ -7,9 +7,7 @@ def read_uai(f_path):
     f = open(f_path, 'r')
     type = f.readline().strip('\n')
     num_variable = int(f.readline().strip('\n'))
-    cardinalites = f.readline().strip('\n').split(' ')
-    for i in range(num_variable):
-        cardinalites[i] = int(cardinalites[i])
+    cardinalites = [int(i) for i in f.readline().strip('\n').split(' ') if i]
     num_clique = int(f.readline().strip('\n'))
 
     cliques = []
@@ -28,9 +26,11 @@ def read_uai(f_path):
         while line == '':
             line = f.readline().strip('\n')
         num_entry = int(line)
-        probs = f.readline().strip('\n').split(' ')
-        for i in range(num_entry):
-            probs[i] = float(probs[i])
+        line = f.readline().strip('\n').split(' ')
+        probs = []
+        while line != ['']:
+            probs = probs + [float(i) for i in line if i]
+            line = f.readline().strip('\n').split(' ')
         function_tables.append([num_entry, probs])
     return type, num_variable, cardinalites, num_clique, cliques, function_tables
 
